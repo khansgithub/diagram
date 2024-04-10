@@ -1,0 +1,122 @@
+<html>
+    <head>
+        <style>
+            *{margin:0; padding:0}
+        </style>
+        <script>
+            const eventSource = new EventSource('/reload');
+
+            eventSource.onmessage = (event) => {
+            if (event.data === 'reload') {
+                console.log('Reloading page...');
+                location.reload(); // Reload page when instructed by the server
+            }
+            };
+        </script>
+    </head>
+    <body>
+
+        <div class="render" style="width:100vw; height:100vh; position: fixed;">
+
+        </div>
+
+        <script type="text/javascript" language="javascript" src="bundle.js"></script>
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/svg.js/3.2.0/svg.min.js" integrity="sha512-EmfT33UCuNEdtd9zuhgQClh7gidfPpkp93WO8GEfAP3cLD++UM1AG9jsTUitCI9DH5nF72XaFePME92r767dHA==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+        <script type="text/javascript">
+            class Order{
+                constructor(order_object){
+                    this.id = 0
+                    this.children = []
+                    this.parent = undefined
+                    this.id = order_object.id
+                    this.draw = undefined
+                }
+
+                link_child = function(child_object){
+                    console.log(this.children)
+                    this.children.push(child_object)
+                    console.log(this.children)
+                    child_object.parent = this
+                }
+            }
+            var order_object = {id: 1}
+            var order = new Order(order_object)
+            window.order = order 
+
+            var child_order_object = {id: 2}
+            var child_order = new Order(child_order_object)
+
+            const draw_obj = SVG().addTo(".render").size("100%", "100%")
+            const ORDER_PADDING = 50
+            const LINE_WIDTH = 10
+
+            order.link_child(child_order)
+
+            draw(order)
+            console.log(order)
+
+            // function randomColor() {return '#' + Math.floor(Math.random()*4096).toString(16).padStart(3, '0')}
+
+            function draw(order){
+                // var o = draw_obj.rect(100,100).fill(randomColor())
+                var o = draw_obj.rect(100,100).fill("gray")
+                order.draw = o;
+                if (order.parent !== undefined){
+                    o.fill("red")
+                    // order has a parent
+                    // draw it under the parent
+                    // also need to mvoe it to the side a bit, but that depends on how many chlidren there are
+                    console.log(order, "drawing line for")
+                    o.transform({
+                        translateY: order.parent.draw.y() + order.parent.draw.height() + ORDER_PADDING
+                    })
+
+                    // draw_obj.line(
+                    //     order.parent.draw.x() + order.parent.draw.width()/2,
+                    //     order.parent.draw.y() + order.parent.draw.height(),
+                    //     o.transform().translateX + o.width()/2,
+                    //     o.transform().translateY,
+                    // )
+
+                    draw_obj.line(
+                        (o.transform().translateX + o.width()/2) - LINE_WIDTH/2,
+                        o.transform().translateY,
+                        (order.parent.draw.x() + order.parent.draw.width()/2) - LINE_WIDTH/2,
+                        order.parent.draw.y() + order.parent.draw.height(),
+                    )
+                    .stroke({ color: '#000', width: LINE_WIDTH, linecap: 'round' })
+                    .front()
+                    
+                } else {
+                    // order does not have a parent
+                }
+                if (order.children.length == 0){
+                    // single order, no children
+                    // maybe has parent
+                } else {
+                    // order has children
+                    order.children.forEach(child_order => {
+                        draw(child_order)
+                    });
+                }
+            }
+            // // Create an SVG.js instance
+            // const draw = SVG().addTo('.render').size(300, 200);
+
+            // // Create a rectangle
+            // const rect = draw.rect(100, 50).fill('blue').move(50, 50);
+
+            // // Create a circle
+            // const circle = draw.circle(30).fill('green');
+
+            // // Insert the circle after the rectangle
+            // rect.after(circle);
+
+            // // Add event listener to the circle
+            // circle.click(() => {
+            // circle.fill('yellow'); // Change color on click
+            // });
+
+        </script>
+    </body>
+</html>
