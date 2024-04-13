@@ -16,9 +16,7 @@
     </head>
     <body>
 
-        <div class="render" style="width:100vw; height:100vh; position: fixed;">
-
-        </div>
+        <div class="render" style="width:100vw; height:100vh; position: fixed; padding:20px"></div>
 
         <script type="text/javascript" language="javascript" src="bundle.js"></script>
         <script src="https://cdnjs.cloudflare.com/ajax/libs/svg.js/3.2.0/svg.min.js" integrity="sha512-EmfT33UCuNEdtd9zuhgQClh7gidfPpkp93WO8GEfAP3cLD++UM1AG9jsTUitCI9DH5nF72XaFePME92r767dHA==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
@@ -39,17 +37,30 @@
                     child_object.parent = this
                 }
             }
+            const WIDTH = 100;
+            const HEIGHT = 100;
+            const BOX_PADDING = 50;
+            const LINE_WIDTH = 4;
+            const LINE_PARAMS = { color: '#000', width: LINE_WIDTH, linecap: 'round'}
+            const PADDING = 4;
+
             var order_object = {id: 1}
             var order = new Order(order_object)
-            window.order = order 
-
             var child_order_object = {id: 2}
             var child_order = new Order(child_order_object)
 
-            const draw_obj = SVG().addTo(".render").size("100%", "100%")
-            const ORDER_PADDING = 50
-            const LINE_WIDTH = 10
+            var child_order_object2 = {id: 3}
+            var child_order2 = new Order(child_order_object2)
 
+            const draw_obj = SVG().addTo(".render").size("100%", "100%")
+
+            window.order = order
+
+            order.link_child(child_order)
+            order.link_child(child_order)
+            order.link_child(child_order)
+            order.link_child(child_order)
+            order.link_child(child_order)
             order.link_child(child_order)
 
             draw(order)
@@ -59,33 +70,32 @@
 
             function draw(order){
                 // var o = draw_obj.rect(100,100).fill(randomColor())
-                var o = draw_obj.rect(100,100).fill("gray")
+                var text = draw_obj.plain("test")
+                var o = draw_obj.rect(WIDTH, HEIGHT).fill("gray")
+                o.move(PADDING, PADDING)
+                text.front()
                 order.draw = o;
                 if (order.parent !== undefined){
-                    o.fill("red")
-                    // order has a parent
-                    // draw it under the parent
-                    // also need to mvoe it to the side a bit, but that depends on how many chlidren there are
-                    console.log(order, "drawing line for")
-                    o.transform({
-                        translateY: order.parent.draw.y() + order.parent.draw.height() + ORDER_PADDING
-                    })
+                    // var parent_o = order.parent.draw
+                    // o.fill("red")
+                    // // order has a parent == order is child
+                    // // draw it under the parent
+                    // // also need to mvoe it to the side a bit, but that depends on how many chlidren there are
+                    // // o.transform({
+                    // //     translateY: parent_o.y() + parent_o.height() + ORDER_PADDING
+                    // // })
+                    // o.y(parent_o.height() + BOX_PADDING)
+                    // o.x(parent_o.x())
 
+                    // console.log(order, "drawing line for")
                     // draw_obj.line(
-                    //     order.parent.draw.x() + order.parent.draw.width()/2,
-                    //     order.parent.draw.y() + order.parent.draw.height(),
-                    //     o.transform().translateX + o.width()/2,
-                    //     o.transform().translateY,
+                    //     o.cx(),
+                    //     o.y() - (LINE_WIDTH/2),
+                    //     parent_o.cx(),
+                    //     parent_o.y() + parent_o.height(),
                     // )
-
-                    draw_obj.line(
-                        (o.transform().translateX + o.width()/2) - LINE_WIDTH/2,
-                        o.transform().translateY,
-                        (order.parent.draw.x() + order.parent.draw.width()/2) - LINE_WIDTH/2,
-                        order.parent.draw.y() + order.parent.draw.height(),
-                    )
-                    .stroke({ color: '#000', width: LINE_WIDTH, linecap: 'round' })
-                    .front()
+                    // .stroke({ color: '#000', width: LINE_WIDTH, linecap: 'round' })
+                    // .front()
                     
                 } else {
                     // order does not have a parent
@@ -95,10 +105,82 @@
                     // maybe has parent
                 } else {
                     // order has children
-                    order.children.forEach(child_order => {
-                        draw(child_order)
-                    });
+                    // o.x() - (order.children.length * (WIDTH + BOX_PADDING)) / 2
+                    var x_original = o.x()
+                    var x_offset = order.children.length * (WIDTH + BOX_PADDING) - BOX_PADDING
+                    x_offset /= 2
+                    x_offset += PADDING
+                    o.cx(x_offset)
+                    draw_children(order.children, x_original)
                 }
+                text.cx(o.cx())
+                text.cy(o.cy())
+                outline(o)
+            }
+
+            function draw_children(o_list, x_start){
+                var parent_o = o_list[0].parent.draw
+                var merged_childred = undefined
+                for(let i = 0; i < o_list.length; i++){
+                    o = draw_obj.rect(WIDTH, HEIGHT);
+                    o.fill("red")
+                    o.move(PADDING, PADDING)
+                    o.x(x_start + (i * WIDTH) + (i * BOX_PADDING))
+                    o.y(parent_o.height() + BOX_PADDING)
+                    outline(o)
+
+                    line = draw_obj.line(o.cx(), o.y(), parent_o.cx(), parent_o.y() + parent_o.height())
+                    line.stroke(LINE_PARAMS)
+
+                    if (o_list[i].children.length > 0){
+                        // TODO
+                        /**
+                         * this gets quite complex here
+                         * need to traverse the ENTIRE tree
+                         * to calculate by how much the entire graph needs to shift right...
+                         * the offset should be calculated as the boxes are drawn
+                         * and at the end everything should be shifted...
+                         * fucking hell
+                         * i guess there'll be an array with all boxes
+                         * and at the end we'll do o.x( o.x() + OFFSET)
+                         **/
+                    }
+
+                    if (merged_childred === undefined){
+                        merged_childred = o.bbox()
+                    } else {
+                        merged_childred = merged_childred.merge(o.bbox())
+                    }
+                }
+                
+                // outline(merged_childred)
+            }
+
+            function outline(o){
+                // meh... i'll deal with this later >_>;
+                if (o.constructor.name == "ct"){
+                    var [tl, tr] = [[o.x, o.y], [o.x+o.width, o.y] ]
+                    var [bl, br] = [[o.x, o.y+o.height], [o.x+o.width, o.y+o.height] ]
+                } else {
+                    var [tl, tr] = [[o.x(), o.y()], [o.x()+o.width(), o.y()] ]
+                    var [bl, br] = [[o.x(), o.y()+o.height()], [o.x()+o.width(), o.y()+o.height()] ]
+                }
+
+                var box_vectors = [
+                    [tl, tr],
+                    [tr, br],
+                    [br, bl],
+                    [bl, tl],
+                ]
+
+                box_vectors.forEach(coordinate => {
+                    start = coordinate[0]
+                    end = coordinate[1]
+                    draw_obj.line(...start, ...end)
+                    .stroke(LINE_PARAMS)
+                    .front()
+
+                })
             }
             // // Create an SVG.js instance
             // const draw = SVG().addTo('.render').size(300, 200);
@@ -116,7 +198,6 @@
             // circle.click(() => {
             // circle.fill('yellow'); // Change color on click
             // });
-
         </script>
     </body>
 </html>
